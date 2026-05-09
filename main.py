@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 # import matplotlib
 
 def create_df():
@@ -50,12 +51,38 @@ def preprocessing(df, map_1, map_2, map_3, map_4, map_5):
         map_5: Vending Machine 5's mapping
 
     Returns:
-        Dataframe:
+        Dataframe: A new dataframe containing the respondent, the slot they chose, the machine 
+        of the slot, the rank they gave the slot, the name of the item at the slot, and the item
+        size.
     """
-    new_df = pd.DataFrame(columns = ["respondent", "slot", "machine", "rank", "item_name"])
+    new_df = pd.DataFrame(columns = ["respondent", "slot", "machine", "rank", "item_name", "size"])
+
+    maps = {
+        1: map_1,
+        2: map_2,
+        3: map_3,
+        4: map_4,
+        5: map_5
+    }
 
     for index, row in df.iterrows():
-        pass
+        for col in df:
+            if col == "Timestamp":
+                continue
+            slot = row[col]
+            machine = int(re.search(r"\d", col).group())
+            rank = re.search(r"\d$", col).group()
+
+            slot_col = str(slot[0])
+            slot_row = int(slot[1:])
+
+            map = maps[machine]
+
+            item_name = map.loc[slot_row, slot_col]
+
+            size = map.loc[11, slot_col]
+
+            new_df.loc[len(new_df)] = {"respondent": index, "slot": slot, "machine": machine, "rank": rank, "item_name": item_name, "size": size}
 
     return new_df
 
@@ -66,7 +93,7 @@ def main(debug = False):
     if (debug): print("Sucessfully created dataframe and maps")
 
     if (debug): print("Preprocessing")
-    preprocessing(df, map_1, map_2, map_3, map_4, map_5)
+    df = preprocessing(df, map_1, map_2, map_3, map_4, map_5)
     if (debug): print("Preprocessing complete")
 
     if (debug):
