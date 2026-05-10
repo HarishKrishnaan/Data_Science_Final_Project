@@ -180,7 +180,8 @@ def random_forest(x_train, y_train, n = 200):
     """
     rf = RandomForestClassifier(
         n_estimators=n,
-        random_state=42
+        random_state=42,
+        class_weight="balanced"
     )
 
     rf.fit(x_train, y_train)
@@ -201,7 +202,8 @@ def logistic_regression(x_train, y_train, iter = 1000):
 
     lr = LogisticRegression(
         max_iter=iter,
-        random_state=42
+        random_state=42,
+        class_weight="balanced"
         )
 
     lr.fit(x_train, y_train)
@@ -221,7 +223,8 @@ def decision_tree(x_train, y_train, depth = 5):
     """
     dt = DecisionTreeClassifier(
         random_state=42,
-        max_depth=depth
+        max_depth=depth,
+        class_weight="balanced"
     )
 
     dt.fit(x_train, y_train)
@@ -259,13 +262,16 @@ def evaluation(y_test, y_pred, display = False):
     """
 
     accuracy = accuracy_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
     cm = confusion_matrix(y_test, y_pred)
 
     if (display):
         print(accuracy)
         print(cm)
 
-    return accuracy, cm
+    return accuracy, precision, recall, f1, cm
 
 def hyperparameter_experiment(df_processed):
     """
@@ -347,7 +353,7 @@ def main(debug = False):
     if (debug): print("Random forest predicitons complete")
 
     if (debug): print("Random forest evaluation")
-    rf_accuracy, rf_cm = evaluation(y_test, rf_pred, True)
+    rf_accuracy, rf_precision, rf_recall, rf_f1, rf_cm = evaluation(y_test, rf_pred, True)
     if (debug): print("Random forest evaluation complete")
 
     # Logistic regression
@@ -360,7 +366,7 @@ def main(debug = False):
     if (debug): print("Logistic regression predictions complete")
 
     if (debug): print("Logistic regression evaluation")
-    lr_accuracy, lr_cm = evaluation(y_test, lr_pred, True)
+    lr_accuracy, lr_precision, lr_recall, lr_f1, lr_cm = evaluation(y_test, lr_pred, True)
     if (debug): print("Logistic regression evaluation complete")
 
     # Decision Tree
@@ -373,7 +379,7 @@ def main(debug = False):
     if (debug): print("Decision tree predictions complete")
 
     if (debug): print("Decision tree evaluation")
-    dt_accuracy, dt_cm = evaluation(y_test, dt_pred, True)
+    dt_accuracy, dt_precision, dt_recall, dt_f1, dt_cm = evaluation(y_test, dt_pred, True)
     if (debug): print("Decision tree evaluation complete")
 
     rf_mean_prob = rf_prob.mean()
@@ -381,6 +387,16 @@ def main(debug = False):
     dt_mean_prob = dt_prob.mean()
 
     # Graphs
+
+    metrics = pd.DataFrame({
+        "Model": ["Random Forest", "Logistic Regression", "Decision Tree"],
+        "Accuracy": [rf_accuracy, lr_accuracy, dt_accuracy],
+        "Precision": [rf_precision, lr_precision, dt_precision],
+        "Recall": [rf_recall, lr_recall, dt_recall],
+        "F1-Score": [rf_f1, lr_f1, dt_f1],
+    })
+
+    print(metrics)
 
     # Random Forest
     importance_rf = pd.DataFrame({

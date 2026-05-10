@@ -15,6 +15,9 @@ The goal of this repository is to predict whether a vending machine item will be
 # Metrics
 
 - Accuracy
+- Precision
+- Recall
+- F1-score
 - Confusion Matrix
 - Mean predicted probability
 
