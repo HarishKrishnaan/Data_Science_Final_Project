@@ -144,7 +144,7 @@ def preprocessing(df, map_1, map_2, map_3, map_4, map_5, item_type):
 
     return pd.DataFrame(new_rows)
 
-def split(df, train_size=0.2):
+def split(df, train_size=0.8):
     """
     Splits the data into testing and training data, setting categorical data into numerical data.
 
@@ -299,24 +299,33 @@ def hyperparameter_experiment(df_processed):
 
     # Random Forest: number of trees
     for n in [50, 100, 200, 300, 500]:
-        rf = RandomForestClassifier(n_estimators=n, random_state=42)
-        rf.fit(x_train, y_train)
-        rf_pred = rf.predict(x_test)
-        rf_results.append((n, accuracy_score(y_test, rf_pred)))
+        rf = random_forest(x_train, y_train, n)
+
+        rf_pred, rf_prob = predictions(rf, x_test)
+
+        rf_accuracy, _, rf_recall, rf_f1, _, rf_roc = evaluation(y_test, rf_pred, rf_prob)
+
+        rf_results.append((n, rf_accuracy, rf_recall, rf_f1, rf_roc))
 
     # Logistic Regression: max iterations
     for max_iter in [100, 250, 500, 1000, 2000]:
-        lr = LogisticRegression(max_iter=max_iter)
-        lr.fit(x_train, y_train)
-        lr_pred = lr.predict(x_test)
-        lr_results.append((max_iter, accuracy_score(y_test, lr_pred)))
+        lr = logistic_regression(x_train, y_train, max_iter)
+
+        lr_pred, lr_prob = predictions(lr, x_test)
+
+        lr_accuracy, _, lr_recall, lr_f1, _, lr_roc = evaluation(y_test, lr_pred, lr_prob)
+
+        lr_results.append((max_iter, lr_accuracy, lr_recall, lr_f1, lr_roc))
 
     # Decision Tree: max depth
     for depth in [1, 2, 3, 5, 10, 15, 20]:
-        dt = DecisionTreeClassifier(max_depth=depth, random_state=42)
-        dt.fit(x_train, y_train)
-        dt_pred = dt.predict(x_test)
-        dt_results.append((depth, accuracy_score(y_test, dt_pred)))
+        dt = decision_tree(x_train, y_train, depth)
+
+        dt_pred, dt_prob = predictions(dt, x_test)
+
+        dt_accuracy, _, dt_recall, dt_f1, _, dt_roc = evaluation(y_test, dt_pred, dt_prob)
+
+        dt_results.append((depth, dt_accuracy, dt_recall, dt_f1, dt_roc))
 
     return rf_results, lr_results, dt_results
 
@@ -491,36 +500,21 @@ def main(debug = False):
 
 
     # Experimentation
-    # rf_results, lr_results, dt_results = hyperparameter_experiment(df_processed)
+    rf_results, lr_results, dt_results = hyperparameter_experiment(df_processed)
 
-    # rf_df = pd.DataFrame(rf_results, columns=["value", "accuracy"])
-    # lr_df = pd.DataFrame(lr_results, columns=["value", "accuracy"])
-    # dt_df = pd.DataFrame(dt_results, columns=["value", "accuracy"])
+    rf_df = pd.DataFrame(rf_results, columns=["value", "accuracy", "recall", "f1", "roc"])
+    lr_df = pd.DataFrame(lr_results, columns=["value", "accuracy", "recall", "f1", "roc"])
+    dt_df = pd.DataFrame(dt_results, columns=["value", "accuracy", "recall", "f1", "roc"])
 
-    # plt.figure(figsize=(8,5))
-    # plt.plot(rf_df["value"], rf_df["accuracy"], marker="o")
-    # plt.xlabel("Number of Trees")
-    # plt.ylabel("Accuracy")
-    # plt.title("Random Forest Accuracy by Number of Trees")
-    # plt.ylim(0, 1)
-    # plt.show()
+    metrics_hyper = pd.DataFrame({
+        "Model": ["Random Forest", "Logistic Regression", "Decision Tree"],
+        "Accuracy": [rf_df["accuracy"].mean(), lr_df["accuracy"].mean(), dt_df["accuracy"].mean()],
+        "Recall": [rf_df["recall"].mean(), lr_df["recall"].mean(), dt_df["recall"].mean()],
+        "F1-Score": [rf_df["f1"].mean(), lr_df["f1"].mean(), dt_df["f1"].mean()],
+        "ROC_AUC": [rf_df["roc"].mean(), lr_df["roc"].mean(), dt_df["roc"].mean()]
+    })
 
-    # plt.figure(figsize=(8,5))
-    # plt.plot(lr_df["value"], lr_df["accuracy"], marker="o")
-    # plt.xlabel("Max Iterations")
-    # plt.ylabel("Accuracy")
-    # plt.title("Logistic Regression Accuracy by Max Iterations")
-    # plt.ylim(0, 1)
-    # plt.show()
-
-    # plt.figure(figsize=(8,5))
-    # plt.plot(dt_df["value"], dt_df["accuracy"], marker="o")
-    # plt.xlabel("Max Depth")
-    # plt.ylabel("Accuracy")
-    # plt.title("Decision Tree Accuracy by Max Depth")
-    # plt.ylim(0, 1)
-    # plt.show()
-
+    print(metrics_hyper)
 
     
 
