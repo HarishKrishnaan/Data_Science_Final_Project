@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -249,16 +249,21 @@ def predictions(model, x_test):
 
     return y_pred, y_prob
 
-def evaluation(y_test, y_pred, display = False):
+def evaluation(y_test, y_pred, y_prob, display = False):
     """
-    Evaluates and prints the accuracy score from the forest
+    Evaluates and prints the accuracy, precision, recall, f1, confusion matrix, and roc-auc score from the model
 
     Args: 
         y_test: The selected testing data
-        y_pred: The predictions from the forest
+        y_pred: The predictions from the model
 
     Returns:
-        accuracy: The accuracy of the forest
+        accuracy: The accuracy score of the model
+        precision: The precision score of the model
+        recall: The recall score of the model
+        f1: The f1-score of the model
+        cm: The confusion matrix of the model
+        roc: The roc-auc score of the model
     """
 
     accuracy = accuracy_score(y_test, y_pred)
@@ -266,12 +271,13 @@ def evaluation(y_test, y_pred, display = False):
     recall = recall_score(y_test, y_pred)
     f1 = f1_score(y_test, y_pred)
     cm = confusion_matrix(y_test, y_pred)
+    roc = roc_auc_score(y_test, y_prob)
 
     if (display):
         print(accuracy)
         print(cm)
 
-    return accuracy, precision, recall, f1, cm
+    return accuracy, precision, recall, f1, cm, roc
 
 def hyperparameter_experiment(df_processed):
     """
@@ -320,9 +326,7 @@ def main(debug = False):
     More characteristics in the data the more better results we get. 
     
     """
-    if (debug): print("Creating dataframe and maps")
     df, map_1, map_2, map_3, map_4, map_5, item_type = create_df()
-    if (debug): print("Sucessfully created dataframe and maps")
 
     if (debug):
         print(df.head(5))
@@ -333,70 +337,50 @@ def main(debug = False):
         print(map_5)
         print(item_type.head(5))
 
-    if (debug): print("Preprocessing")
     df_processed = preprocessing(df, map_1, map_2, map_3, map_4, map_5, item_type)
-    if (debug): print("Preprocessing complete")
 
     if (debug): print(df_processed.head(5))
 
-    if (debug): print("Splitting")
     x, y, x_train, x_test, y_train, y_test = split(df_processed, 0.2)
-    if (debug): print("Splitting complete")
 
     # Random Forest
-    if (debug): print("Fitting random forest")
     rf = random_forest(x_train, y_train)
-    if (debug): print("Fitting random forest complete")
 
-    if (debug): print("Random forest predictions")
     rf_pred, rf_prob = predictions(rf, x_test)
-    if (debug): print("Random forest predicitons complete")
 
-    if (debug): print("Random forest evaluation")
-    rf_accuracy, rf_precision, rf_recall, rf_f1, rf_cm = evaluation(y_test, rf_pred, True)
-    if (debug): print("Random forest evaluation complete")
+    rf_accuracy, rf_precision, rf_recall, rf_f1, rf_cm, rf_roc = evaluation(y_test, rf_pred, rf_prob, True)
 
     # Logistic regression
-    if (debug): print("Fitting logistic regression")
     lr = logistic_regression(x_train, y_train)
-    if (debug): print("Fitting logistic regression complete")
 
-    if (debug): print("Logistic regression predictions")
     lr_pred, lr_prob = predictions(lr, x_test)
-    if (debug): print("Logistic regression predictions complete")
 
-    if (debug): print("Logistic regression evaluation")
-    lr_accuracy, lr_precision, lr_recall, lr_f1, lr_cm = evaluation(y_test, lr_pred, True)
-    if (debug): print("Logistic regression evaluation complete")
+    lr_accuracy, lr_precision, lr_recall, lr_f1, lr_cm, lr_roc = evaluation(y_test, lr_pred, lr_prob, True)
 
     # Decision Tree
-    if (debug): print("Decision tree regression")
     dt = decision_tree(x_train, y_train)
-    if (debug): print("Fitting decision tree complete")
 
-    if (debug): print("Decision tree predictions")
     dt_pred, dt_prob = predictions(dt, x_test)
-    if (debug): print("Decision tree predictions complete")
 
-    if (debug): print("Decision tree evaluation")
-    dt_accuracy, dt_precision, dt_recall, dt_f1, dt_cm = evaluation(y_test, dt_pred, True)
-    if (debug): print("Decision tree evaluation complete")
+    dt_accuracy, dt_precision, dt_recall, dt_f1, dt_cm, dt_roc = evaluation(y_test, dt_pred, dt_prob, True)
 
     rf_mean_prob = rf_prob.mean()
     lr_mean_prob = lr_prob.mean()
     dt_mean_prob = dt_prob.mean()
 
-    # Graphs
-
+    # Metrics
     metrics = pd.DataFrame({
         "Model": ["Random Forest", "Logistic Regression", "Decision Tree"],
         "Accuracy": [rf_accuracy, lr_accuracy, dt_accuracy],
         "Precision": [rf_precision, lr_precision, dt_precision],
         "Recall": [rf_recall, lr_recall, dt_recall],
         "F1-Score": [rf_f1, lr_f1, dt_f1],
+        "ROC_AUC": [rf_roc, lr_roc, dt_roc]
     })
 
     print(metrics)
+
+    # Graphs
 
     # Random Forest
     importance_rf = pd.DataFrame({

@@ -19,6 +19,7 @@ The goal of this repository is to predict whether a vending machine item will be
 - Recall
 - F1-score
 - Confusion Matrix
+- ROC-AUC
 - Mean predicted probability
 
 # Prerequisites
