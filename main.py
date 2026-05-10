@@ -3,10 +3,11 @@ import re
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
-# import matplotlib
 
 def create_df():
     """
@@ -18,39 +19,40 @@ def create_df():
         The dataframes for the survey results, 5 vending machine maps, and item types.
     
     """
-    df = pd.read_csv("./Survey Results.csv")
+    df = pd.read_csv("./data/Survey Results.csv")
     # For respondents
     df.index = range(1,len(df) + 1)
 
     # The 11'th row will determine whether the column was for large items or small items
-    map_1 = pd.read_csv("./Machine 1.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
+    map_1 = pd.read_csv("./data/Machine 1.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
     map_1.index = range(1,11)
     map_1.loc[11] = {'A': "Large", 'B': "Large", "C": "Small", "D": "Small", "E": "Large", "F": "Large"}
 
-    map_2 = pd.read_csv("./Machine 2.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
+    map_2 = pd.read_csv("./data/Machine 2.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
     map_2.index = range(1,11)
     map_2.loc[11] = {'A': "Large", 'B': "Large", "C": "Large", "D": "Large", "E": "Small", "F": "Small"}
 
-    map_3 = pd.read_csv("./Machine 3.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
+    map_3 = pd.read_csv("./data/Machine 3.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
     map_3.index = range(1,11)
     map_3.loc[11] = {'A': "Small", 'B': "Small", "C": "Large", "D": "Large", "E": "Large", "F": "Large"}
 
-    map_4 = pd.read_csv("./Machine 4.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
+    map_4 = pd.read_csv("./data/Machine 4.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
     map_4.index = range(1,11)
     map_4.loc[11] = {'A': "Large", 'B': "Small", "C": "Large", "D": "Large", "E": "Large", "F": "Small"}
 
-    map_5 = pd.read_csv("./Machine 5.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
+    map_5 = pd.read_csv("./data/Machine 5.csv", names = ['A', 'B', 'C', 'D', 'E', 'F'])
     map_5.index = range(1,11)
     map_5.loc[11] = {'A': "Large", 'B': "Large", "C": "Large", "D": "Small", "E": "Large", "F": "Small"}
 
-    item_type = pd.read_csv("./item_type.csv")
+    item_type = pd.read_csv("./data/item_type.csv")
 
     return df, map_1, map_2, map_3, map_4, map_5, item_type
 
 def preprocessing(df, map_1, map_2, map_3, map_4, map_5, item_type):
     """
     Using the dataframe from the respondents, process all the selected data into a list, then for every respondents in every machine
-    create a table describing whether the user selected the item or not.
+    create a table describing whether the user selected the item or not. Additionally, add in any important values such as type,
+    location predicates, and others.
 
     Args:
         df: The survey results
@@ -156,7 +158,7 @@ def split(df, train_size=0.2):
     df_encoded = pd.get_dummies(df, columns=["size", "type"])
 
     # df_encoded = df_encoded.drop(columns=["item_name"])
-    df_encoded = df_encoded.drop(columns=["item_name", "respondent", "machine", "row", "col"])
+    df_encoded = df_encoded.drop(columns=["item_name", "respondent", "machine"])
 
     x = df_encoded.drop(columns=["selected"])
     y = df_encoded["selected"]
@@ -185,12 +187,53 @@ def random_forest(x_train, y_train, n = 200):
 
     return rf
 
-def predictions(rf, x_test):
+def logistic_regression(x_train, y_train, iter = 1000):
     """
-    Predictions on the random forests
+    Fits a logistic regression model with the training dataframes
 
     Args:
-        rf: The random forest
+        x_train: The not-selected training data
+        y_train: The selected training data
+
+    Returns:
+        LogisticRegression: The logistic regression
+    """
+
+    lr = LogisticRegression(
+        max_iter=iter,
+        random_state=42
+        )
+
+    lr.fit(x_train, y_train)
+
+    return lr
+
+def decision_tree(x_train, y_train, depth = 5):
+    """
+    Fits a decision tree model with the training dataframes
+
+    Args:
+        x_train: The not-selected training data
+        y_train: The selected training data
+
+    Returns:
+        DecisionTreeClassifier: The decision tree
+    """
+    dt = DecisionTreeClassifier(
+        random_state=42,
+        max_depth=depth
+    )
+
+    dt.fit(x_train, y_train)
+
+    return dt
+
+def predictions(model, x_test):
+    """
+    Predictions on the model
+
+    Args:
+        model: The model to use
         x_test: The non-selected testing data
 
     Returns:
@@ -198,8 +241,8 @@ def predictions(rf, x_test):
         y_prob: The probability from the forest
     """
 
-    y_pred = rf.predict(x_test)
-    y_prob = rf.predict_proba(x_test)[:, 1]
+    y_pred = model.predict(x_test)
+    y_prob = model.predict_proba(x_test)[:, 1]
 
     return y_pred, y_prob
 
@@ -224,55 +267,46 @@ def evaluation(y_test, y_pred, display = False):
 
     return accuracy, cm
 
-def size_loop(df, train_size = [0.8]):
+def hyperparameter_experiment(df_processed):
     """
-    Tests the random forest with different testing sizes and different n_sizes. Prints out a plot of the resulting accuracy
+    Tests the three models with different n, iteration, and depths
 
     Args:
-        df: The pre-processed df to use
-        train_size: A list of test sizes to try out, as a %
-        n_size: A list of random forest estimators to try out
-    """
+        df_processed: The processed dataframe to use
 
-    accuracy_list = []
-
-    importance = pd.DataFrame()
-
-    if (len(train_size) == 0): train_size.append(0.8)
-
-    for train in train_size:
-        x, y, x_train, x_test, y_train, y_test = split(df, train)
-
-        importance["features"] = x.columns
+    Returns:
+        Tuple(List, List, List)
         
-        rf = random_forest(x_train, y_train, 200)
 
-        y_pred, y_prob = predictions(rf, x_test)
+    """
+    rf_results = []
+    lr_results = []
+    dt_results = []
 
-        accuracy, cr = evaluation(y_test, y_pred)
+    x, y, x_train, x_test, y_train, y_test = split(df_processed, 0.8)
 
-        print(f"Training Size: {train * 100}% | Accuracy: {accuracy:.4f}")
+    # Random Forest: number of trees
+    for n in [50, 100, 200, 300, 500]:
+        rf = RandomForestClassifier(n_estimators=n, random_state=42)
+        rf.fit(x_train, y_train)
+        rf_pred = rf.predict(x_test)
+        rf_results.append((n, accuracy_score(y_test, rf_pred)))
 
-        importance[f"importance.{train}"] = rf.feature_importances_
+    # Logistic Regression: max iterations
+    for max_iter in [100, 250, 500, 1000, 2000]:
+        lr = LogisticRegression(max_iter=max_iter)
+        lr.fit(x_train, y_train)
+        lr_pred = lr.predict(x_test)
+        lr_results.append((max_iter, accuracy_score(y_test, lr_pred)))
 
-        # accuracy_list.append((accuracy, train))
+    # Decision Tree: max depth
+    for depth in [1, 2, 3, 5, 10, 15, 20]:
+        dt = DecisionTreeClassifier(max_depth=depth, random_state=42)
+        dt.fit(x_train, y_train)
+        dt_pred = dt.predict(x_test)
+        dt_results.append((depth, accuracy_score(y_test, dt_pred)))
 
-    # df_results = pd.DataFrame(accuracy_list, columns=["accuracy","train_size"])
-
-    print(importance)
-
-    
-
-def rank_weight(rank):
-    rank_weight = {
-        1: 3,
-        2: 2,
-        3: 1
-    }
-    try:
-        return rank_weight[rank]
-    except:
-        return None
+    return rf_results, lr_results, dt_results
 
 def main(debug = False):
     """
@@ -303,116 +337,189 @@ def main(debug = False):
     x, y, x_train, x_test, y_train, y_test = split(df_processed, 0.2)
     if (debug): print("Splitting complete")
 
+    # Random Forest
     if (debug): print("Fitting random forest")
     rf = random_forest(x_train, y_train)
     if (debug): print("Fitting random forest complete")
 
-    if (debug): print("Predictions")
-    y_pred, y_prob = predictions(rf, x_test)
-    if (debug): print("Predicitons complete")
+    if (debug): print("Random forest predictions")
+    rf_pred, rf_prob = predictions(rf, x_test)
+    if (debug): print("Random forest predicitons complete")
 
-    if (debug): print("Evaluation")
-    _, cm = evaluation(y_test, y_pred, True)
-    if (debug): print("Evaluation complete")
+    if (debug): print("Random forest evaluation")
+    rf_accuracy, rf_cm = evaluation(y_test, rf_pred, True)
+    if (debug): print("Random forest evaluation complete")
 
-    importance = pd.DataFrame({
+    # Logistic regression
+    if (debug): print("Fitting logistic regression")
+    lr = logistic_regression(x_train, y_train)
+    if (debug): print("Fitting logistic regression complete")
+
+    if (debug): print("Logistic regression predictions")
+    lr_pred, lr_prob = predictions(lr, x_test)
+    if (debug): print("Logistic regression predictions complete")
+
+    if (debug): print("Logistic regression evaluation")
+    lr_accuracy, lr_cm = evaluation(y_test, lr_pred, True)
+    if (debug): print("Logistic regression evaluation complete")
+
+    # Decision Tree
+    if (debug): print("Decision tree regression")
+    dt = decision_tree(x_train, y_train)
+    if (debug): print("Fitting decision tree complete")
+
+    if (debug): print("Decision tree predictions")
+    dt_pred, dt_prob = predictions(dt, x_test)
+    if (debug): print("Decision tree predictions complete")
+
+    if (debug): print("Decision tree evaluation")
+    dt_accuracy, dt_cm = evaluation(y_test, dt_pred, True)
+    if (debug): print("Decision tree evaluation complete")
+
+    rf_mean_prob = rf_prob.mean()
+    lr_mean_prob = lr_prob.mean()
+    dt_mean_prob = dt_prob.mean()
+
+    # Graphs
+
+    # Random Forest
+    importance_rf = pd.DataFrame({
         "feature": x.columns,
         "importance": rf.feature_importances_
-    }).sort_values(by="importance", ascending=False)
-
-    importance = importance.sort_values("importance", ascending=True)
+    })
+    
+    importance_rf = importance_rf.sort_values("importance", ascending=True)
 
     plt.figure(figsize=(8,6))
-    plt.barh(importance["feature"], importance["importance"])
+    plt.barh(importance_rf["feature"], importance_rf["importance"])
     plt.title("Random Forest Feature Importance")
     plt.xlabel("Importance")
     plt.ylabel("Feature")
     plt.show()
 
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues")
+    sns.heatmap(rf_cm, annot=True, fmt="d", cmap="Blues")
     plt.xlabel("Predicted")
     plt.ylabel("True")
-    plt.title("Confusion Matrix Heatmap")
+    plt.title("Random Forest Confusion Matrix Heatmap")
     plt.show()
 
     plt.figure()
-    plt.hist(y_prob, bins=20)
-    plt.title("Prediction Probability Distribution")
+    plt.hist(rf_prob, bins=20)
+    plt.title("Random Forest Prediction Probability Distribution")
     plt.xlabel("Predicted probability of selection")
     plt.ylabel("Count")
     plt.show()
 
-    # df_copy = df_processed.copy()
+    # Logistic Regression
+    importance_lr = pd.DataFrame({
+        "feature": x.columns,
+        'coefficient': lr.coef_[0],
+        'odds_ratio': np.exp(lr.coef_[0])
+    })
 
-    # expand_size = {
-    #     1: (1, 2),
-    #     2: (3, 4),
-    #     3: (5, 6),
-    #     4: (7, 8),
-    #     5: (9, 10)
-    # }
+    importance_lr = importance_lr.sort_values("coefficient", ascending=True)
 
-    # expanded_rows = []
+    plt.figure(figsize=(8,6))
+    plt.barh(importance_lr["feature"], importance_lr["coefficient"])
+    plt.title("Logistic Regression Coefficient Importance")
+    plt.xlabel("Importance")
+    plt.ylabel("Coefficient")
+    plt.show()
 
-    # for _, row in df_copy.iterrows():
+    sns.heatmap(lr_cm, annot=True, fmt="d", cmap="Blues")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title("Logistic Regression Confusion Matrix Heatmap")
+    plt.show()
 
-    #     positions = [(row["row"], row["col"])]
+    plt.figure()
+    plt.hist(lr_prob, bins=20)
+    plt.title("Logistic Regression Prediction Probability Distribution")
+    plt.xlabel("Predicted probability of selection")
+    plt.ylabel("Count")
+    plt.show()
 
-    #     if row["size"] == "Large":
-    #         col = row["col"]
+    # Decision Tree
+    importance_dt = pd.DataFrame({
+        "feature": x.columns,
+        "importance": dt.feature_importances_
+    })
 
-    #         for k, (c1, c2) in expand_size.items():
-    #             if col == k:
-    #                 positions = [(row["row"], c1), (row["row"], c2)]
-    #                 break
+    importance_dt = importance_dt.sort_values("importance", ascending=True)
 
-    #     for r, c in positions:
-    #         new_row = row.copy()
-    #         new_row["row"] = r
-    #         new_row["col"] = c
-    #         expanded_rows.append(new_row)
+    plt.figure(figsize=(8,6))
+    plt.barh(importance_dt["feature"], importance_dt["importance"])
+    plt.title("Decision Tree Feature Importance")
+    plt.xlabel("Importance")
+    plt.ylabel("Feature")
+    plt.show()
 
-    # pivot = pd.DataFrame(expanded_rows)
+    sns.heatmap(dt_cm, annot=True, fmt="d", cmap="Blues")
+    plt.xlabel("Predicted")
+    plt.ylabel("True")
+    plt.title("Decision Tree Confusion Matrix Heatmap")
+    plt.show()
 
-    # print(pivot.head(10))
+    plt.figure()
+    plt.hist(dt_prob, bins=20)
+    plt.title("Decision Tree Prediction Probability Distribution")
+    plt.xlabel("Predicted probability of selection")
+    plt.ylabel("Count")
+    plt.show()
 
-    # heatmap_data = pivot.groupby(["row", "col"])["selected"].mean().unstack()
+    models = ["Random Forest", "Logistic Regression", "Decision Tree"]
+
+    accuracy_scores = [rf_accuracy, lr_accuracy, dt_accuracy]
+    mean_probs = [rf_mean_prob, lr_mean_prob, dt_mean_prob]
+
+    plt.figure(figsize=(8, 5))
+    x = np.arange(len(models))
+    width = 0.35
+
+    bars1 = plt.bar(x - width/2, accuracy_scores, width, label="Accuracy")
+    bars2 = plt.bar(x + width/2, mean_probs, width, label="Mean Probability")
+
+    plt.bar_label(bars1, labels=[f"{v:.4f}" for v in accuracy_scores], padding=3)
+    plt.bar_label(bars2, labels=[f"{v:.4f}" for v in mean_probs], padding=3)
+
+    plt.xticks(x, models)
+    plt.ylabel("Score")
+    plt.title("Model Accuracy and Mean Predicted Probability")
+    plt.ylim(0, 1)
+    plt.legend()
+    plt.show()
+
+
+    # Experimentation
+    # rf_results, lr_results, dt_results = hyperparameter_experiment(df_processed)
+
+    # rf_df = pd.DataFrame(rf_results, columns=["value", "accuracy"])
+    # lr_df = pd.DataFrame(lr_results, columns=["value", "accuracy"])
+    # dt_df = pd.DataFrame(dt_results, columns=["value", "accuracy"])
 
     # plt.figure(figsize=(8,5))
-    # sns.heatmap(heatmap_data, cmap="YlOrRd", annot=False)
-    # plt.title("Selection Rate by Machine Position (Expanded Large Items)")
-    # plt.xlabel("Column")
-    # plt.ylabel("Row")
+    # plt.plot(rf_df["value"], rf_df["accuracy"], marker="o")
+    # plt.xlabel("Number of Trees")
+    # plt.ylabel("Accuracy")
+    # plt.title("Random Forest Accuracy by Number of Trees")
+    # plt.ylim(0, 1)
     # plt.show()
 
+    # plt.figure(figsize=(8,5))
+    # plt.plot(lr_df["value"], lr_df["accuracy"], marker="o")
+    # plt.xlabel("Max Iterations")
+    # plt.ylabel("Accuracy")
+    # plt.title("Logistic Regression Accuracy by Max Iterations")
+    # plt.ylim(0, 1)
+    # plt.show()
 
-
-
-
-
-    # Todo Graphics
-    # df["rank_weight"] = df["rank"].map(rank_weight)
-
-    # if (debug): print(df.head(5))
-
-    # df_summary = df.groupby("item_name").agg(
-    #     count = ("item_name", "count"),
-    #     rank_score = ("rank_weight", "sum")
-    # ).sort_index()
-
-    # if (debug): print(df_summary.head(5))
-
-    # df_combined_map = pd.concat([map_1.drop(11),map_2.drop(11),map_3.drop(11),map_4.drop(11),map_5.drop(11)]).stack().reset_index(drop=True).to_frame(name="item_name")
-
-    # df_map_summary = df_combined_map.groupby(by="item_name").agg(
-    #     appearance = ("item_name", "count")
-    # )
-
-    # if (debug): print(df_map_summary.head(5))
-
-    # df_summary = pd.merge(df_summary, df_map_summary, on="item_name", how="right").fillna(0)
-
-    # if (debug): print(df_summary.head(11))
+    # plt.figure(figsize=(8,5))
+    # plt.plot(dt_df["value"], dt_df["accuracy"], marker="o")
+    # plt.xlabel("Max Depth")
+    # plt.ylabel("Accuracy")
+    # plt.title("Decision Tree Accuracy by Max Depth")
+    # plt.ylim(0, 1)
+    # plt.show()
 
 
     
@@ -420,4 +527,4 @@ def main(debug = False):
     
 
 if __name__ == "__main__":
-    main(debug=True)
+    main(debug=False)
