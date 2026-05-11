@@ -1,0 +1,353 @@
+\documentclass{article}
+\usepackage{graphicx}
+% if you need to pass options to natbib, use, e.g.:
+%     \PassOptionsToPackage{numbers, compress}{natbib}
+% before loading neurips_2026
+
+% The authors should use one of these tracks.
+% Before accepting by the NeurIPS conference, select one of the options below.
+% 0. "default" for submission
+% \usepackage{neurips_2026}
+% the "default" option is equal to the "main" option, which is used for the Main Track with double-blind reviewing.
+% 1. "main" option is used for the Main Track
+ % \usepackage[main]{neurips_2026}
+% 2. "position" option is used for the Position Paper Track
+ % \usepackage[position]{neurips_2026}
+% 3. "eandd" option is used for the Evaluations & Datasets Track
+ % \usepackage[eandd]{neurips_2026}
+ % if you need to opt-in for a single-blind submission in the E&D track:
+ %\usepackage[eandd, nonanonymous]{neurips_2026}
+% 4. "creativeai" option is used for the Creative AI Track
+%  \usepackage[creativeai]{neurips_2026}
+% 5. "sglblindworkshop" option is used for the Workshop with single-blind reviewing
+ % \usepackage[sglblindworkshop]{neurips_2026}
+% 6. "dblblindworkshop" option is used for the Workshop with double-blind reviewing
+%  \usepackage[dblblindworkshop]{neurips_2026}
+
+% After being accepted, the authors should add "final" behind the track to compile a camera-ready version.
+% 1. Main Track
+ \usepackage[main, final]{neurips_2026}
+% 2. Position Paper Track
+%  \usepackage[position, final]{neurips_2026}
+% 3. Evaluations & Datasets Track
+ % \usepackage[eandd, final]{neurips_2026}
+% 4. Creative AI Track
+%  \usepackage[creativeai, final]{neurips_2026}
+% 5. Workshop with single-blind reviewing
+%  \usepackage[sglblindworkshop, final]{neurips_2026}
+% 6. Workshop with double-blind reviewing
+%  \usepackage[dblblindworkshop, final]{neurips_2026}
+% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote.
+% For workshops (5., 6.), the authors should add the name of the workshop, "\workshoptitle" command is used to set the workshop title.
+% \workshoptitle{WORKSHOP TITLE}
+
+% "preprint" option is used for arXiv or other preprint submissions
+ % \usepackage[preprint]{neurips_2026}
+
+% to avoid loading the natbib package, add option nonatbib:
+%    \usepackage[nonatbib]{neurips_2026}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{amsmath}
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{xcolor}         % colors
+\usepackage{float}
+
+% Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote. 
+\title{Exploring the Importance of Vending Machine Attributes with Random Forest}
+
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+\author{%
+  Harish Krishnan \\
+  Department of Computer Science\\
+  Rutgers University\\
+  \texttt{hk857@scarletmail.rutgers.edu}
+  \AND
+  Johnson Nguyen \\
+  Department of Computer Science\\
+  Rutgers University\\
+  \texttt{jan234@scarletmail.rutgers.edu}
+}
+
+%                 Model  Accuracy  Precision    Recall  F1-Score   ROC_AUC
+%0        Random Forest  0.636364   0.096220  0.439791  0.157895  0.574853
+%1  Logistic Regression  0.544399   0.088806  0.526702  0.151987  0.559737
+%2        Decision Tree  0.478084   0.088284  0.614660  0.154392  0.551356
+
+%Hyperparameter
+%                 Model  Mean Accuracy    Mean Recall  Mean F1-Score   Mean ROC_AUC
+%0        Random Forest  0.587208  0.599240  0.198516  0.628777
+%1  Logistic Regression  0.519156  0.673004  0.192916  0.600111
+%2        Decision Tree  0.524675  0.663227  0.193025  0.608664
+\begin{document}
+
+
+\maketitle
+
+
+\begin{abstract}
+Vending machine operators face a practical product-placement problem because each machine has limited space, and unpopular items can reduce revenue or remain unsold until expiration. In this project, we analyze a survey-based vending machine dataset in which 77 respondents selected their top three items from each of five vending machine layouts. The original survey responses were transformed into an item-level binary classification dataset containing 15,400 item exposure rows, where each row represents whether a respondent selected a specific item in a specific machine. We engineered product and placement features including item type, item size, row, column, edge placement, eye-level placement, and distance from the machine center. We then compared Random Forest, Logistic Regression, and Decision Tree models using accuracy, precision, recall, F1-score, ROC-AUC, confusion matrices, predicted probability distributions, and feature importance plots. Because only 7.5\% of item exposures were positive selections, we emphasize recall, F1-score, and ROC-AUC rather than accuracy alone. Our results show that predicting individual vending machine choices is challenging with a small survey dataset, but product placement features such as row, column, and distance from center provide useful signals for understanding customer selection behavior.
+
+The GitHub repository can be found here: \url{https://github.com/HarishKrishnaan/Data_Science_Final_Project}
+\end{abstract}
+
+
+
+\section{Introduction}
+
+Vending machines operate under strict space constraints. Each slot can only hold one product type, so stocking products that customers do not want can reduce revenue, waste space, and increase the chance that items expire before being sold. For this reason, vending machine layout design is both an inventory problem and a product-placement problem. Operators must decide not only which snacks to include, but also where those snacks should be placed inside the machine.
+
+This project studies whether product attributes and placement attributes can be used to predict which vending machine items customers are most likely to select. The dataset was collected through an online survey in which respondents viewed five vending machine layouts and selected their top three choices from each machine. Each product choice was represented by a slot code, such as A1 or B3, which was then mapped back to the item name, item type, item size, and physical location in the machine.
+
+We formulate the problem as a binary classification task. For every respondent, vending machine, and item slot, the target variable is whether the respondent selected that item. This approach allows the model to evaluate every product placement opportunity, rather than only studying the products that were chosen. The resulting dataset is highly imbalanced because each respondent selects only three items out of 40 possible choices per machine. Therefore, evaluation metrics such as recall, F1-score, and ROC-AUC are more informative than accuracy alone.
+
+Random Forest was selected as the primary model because vending machine choice behavior may involve nonlinear interactions between product type and item location. For example, chips may perform differently depending on whether they are placed near the center or at eye level, and large items may attract attention differently from small items. Logistic Regression and Decision Tree models were also trained as baselines to compare the Random Forest model against both a linear classifier and a simpler nonlinear tree-based classifier.
+
+The main contributions of this project are:
+\begin{itemize}
+    \item We transform raw survey responses into an item-level supervised learning dataset for vending machine choice prediction.
+    \item We engineer interpretable product and placement features, including item type, item size, row, column, edge placement, eye-level placement, and distance from center.
+    \item We compare Random Forest against Logistic Regression and Decision Tree baselines using multiple classification metrics.
+    \item We interpret the models using confusion matrices, predicted probability plots, and feature importance visualizations to identify practical layout insights.
+\end{itemize}
+
+
+\section{Related Work}
+
+Machine learning has been widely applied to retail and sales prediction problems because businesses often need to forecast demand, manage inventory, and improve product availability. Tiganoaia and Anghel studied machine learning algorithms for store sales prediction and showed how supervised learning can support sales-related decision making \cite{tiganoaia2024}. Although vending machine choice prediction is smaller in scale than general retail sales prediction, the same motivation applies: better predictions can help operators decide which products should receive limited shelf space.
+
+This project also relates to binary classification because each item exposure is labeled as either selected or not selected. Logistic Regression is a common baseline for binary prediction problems because it models the probability of a positive outcome as a function of input features \cite{cox1958}. In this project, Logistic Regression provides an interpretable linear comparison against tree-based models.
+
+Decision Trees and Random Forests are especially relevant because vending machine choices may depend on nonlinear interactions between item type and item placement. Quinlan's work on decision trees introduced a widely used approach for learning rule-based classification structures from examples \cite{quinlan1986}. Random Forests extend this idea by combining many decision trees, reducing the instability of a single tree and improving generalization \cite{breiman2001}. This makes Random Forest appropriate for our task because product selection may depend on combinations of features such as row, column, item size, and item category.
+
+Compared with prior sales prediction work, our project focuses on stated customer preference rather than historical transaction volume. The dataset does not record actual purchases. Instead, it captures which vending machine items respondents would choose from different layouts. Therefore, the goal is not only predictive accuracy, but also interpretability: we want to understand which product and placement attributes appear to influence customer selection.
+
+\section{Methodology}
+
+\textbf{3.1 Data Collection} \\
+
+The data was collected through an online survey. Each respondent viewed five vending machine layouts. Every vending machine contained 40 possible item choices arranged across six rows labeled A through F. Columns were labeled numerically, with small-item rows using 10 columns and large-item rows using five wider columns. Small items occupied one cell, while large items occupied two horizontal cells. Respondents selected their top three item choices from each machine, producing 15 total choices per respondent.
+
+The official dataset used in this report contains 77 respondents. Since each respondent evaluated five machines with 40 items per machine, the expanded dataset contains:
+\[
+77 \times 5 \times 40 = 15{,}400
+\]
+item exposure rows. Since each respondent selected three items from each of the five vending machines, the dataset contains:
+\[
+77 \times 5 \times 3 = 1{,}155
+\]
+positive selections and 14,245 non-selections. This produces a positive class rate of 7.5\%, or a success-failure ratio of 3:37.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l r}
+        \toprule
+        Dataset Property & Value \\
+        \midrule
+        Official survey respondents & 77 \\
+        Vending machine layouts & 5 \\
+        Items per machine & 40 \\
+        Item exposure rows & 15,400 \\
+        Positive selections & 1,155 \\
+        Non-selections & 14,245 \\
+        Positive class rate & 7.5\% \\
+        Success-failure ratio & 3:37 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Summary of the transformed vending machine dataset used for model training and evaluation.}
+    \label{tab:dataset_summary}
+\end{table}
+
+\textbf{3.2 Data Preprocessing and Feature Engineering} \\
+
+The raw survey responses were transformed into an item-level binary classification dataset. For each respondent, each vending machine, and each item slot, one row was created. The target variable was coded as:
+\[
+y =
+\begin{cases}
+1, & \text{if the respondent selected the item,}\\
+0, & \text{otherwise.}
+\end{cases}
+\]
+
+Each slot code was mapped to its corresponding product name using the machine-specific item mapping sheets. Product names were then mapped to broader item types such as chips, candy, cookies, crackers, pastry, gum, and bars. This allowed the model to use both the identity of the product category and the physical placement of the item.
+
+The final feature set included product features and placement features. Product features included item type and item size. Placement features included numerical row, numerical column, whether the item was located at the edge of the machine, whether the item was at eye level, and the item's distance from the center of the machine. Row letters were converted to numerical values, such as A = 1 and B = 2. The eye-level feature was represented as a binary variable for row B. The edge feature was represented as a binary variable indicating whether the item appeared on the far left or far right side of the machine.
+
+Categorical variables were encoded into binary indicator variables. For example, item type was converted into features such as whether the item was chips, candy, cookies, crackers, pastry, gum, or bars. Item size was also converted into binary indicators for large and small products. Numerical placement features such as row, column, and distance from center were retained as numeric variables. These transformations made the dataset usable for Logistic Regression, Decision Tree, and Random Forest models.
+
+\textbf{3.3 Data Splitting} \\
+
+After preprocessing, the dataset was separated into feature variables and the binary target variable. The feature matrix contained product and placement attributes, while the target vector indicated whether the item was selected. The dataset was then divided into training and testing sets using an 80\% training and 20\% testing split. The models were trained only on the training set and evaluated on the held-out testing set. This separation is important because it prevents the model from being evaluated on the same observations it used during training.
+
+Because the dataset is highly imbalanced, the positive class represents a small minority of the rows. A model that predicts every item as not selected could obtain high accuracy while failing to identify actual selected items. For this reason, the evaluation emphasizes recall, F1-score, ROC-AUC, and confusion matrices in addition to accuracy.
+
+\textbf{3.4 Model Selection} \\
+
+Three supervised classification models were evaluated: Logistic Regression, Decision Tree, and Random Forest. Logistic Regression was used as a linear baseline because it provides interpretable coefficients and helps show whether the relationship between features and item selection can be approximated linearly.
+
+Decision Tree was used as a simple nonlinear baseline. It can learn rule-based splits, such as whether a certain row or product type increases the probability of selection. However, a single decision tree can overfit the training data, especially when the dataset contains many feature combinations.
+
+Random Forest was selected as the primary model because it combines many decision trees and averages their predictions. This allows it to capture nonlinear relationships and feature interactions while reducing the variance of a single tree. In the context of vending machine selection, this is useful because an item's likelihood of being selected may depend on both what the item is and where it is placed.
+
+\textbf{3.5 Evaluation Metrics} \\
+
+The models were evaluated using accuracy, precision, recall, F1-score, and ROC-AUC. Accuracy measures the overall proportion of correct predictions. Precision measures how many predicted selected items were actually selected. Recall measures how many actual selected items the model successfully identified. F1-score balances precision and recall. ROC-AUC measures how well the model separates selected and non-selected items across different classification thresholds.
+
+Since only 7.5\% of item exposure rows are positive selections, recall and F1-score are especially important. In this project, a false negative means that the model failed to identify an item that a respondent actually selected. A false positive means that the model predicted an item would be selected when it was not. These two error types have different practical meanings for vending machine layout decisions.
+\section{Experiments \& Results}
+
+\textbf{4.1 Prediction Results} \\
+
+Table \ref{tab:1} reports the performance of Random Forest, Logistic Regression, and Decision Tree on the official test dataset. These models were compared using the same feature set and the same train-test split so that differences in performance reflect the behavior of the models rather than differences in preprocessing.
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l c c c c c}
+        \toprule
+        Model & Accuracy & Precision & Recall & F1-Score & ROC-AUC \\
+        \midrule
+        Random Forest & 0.636364 & 0.096220 & 0.439791 & 0.157895 & 0.574853 \\
+        Logistic Regression & 0.544399 & 0.088806 & 0.526702 & 0.151987 & 0.559737 \\
+        Decision Tree & 0.478084 & 0.088284 & 0.614660 & 0.154392 & 0.551356 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Performance of vending machine item-selection models on the official test dataset.}
+    \label{tab:1}
+\end{table}
+The three models show different tradeoffs between accuracy and recall. Random Forest achieved the highest accuracy at 63.6\%, followed by Logistic Regression at 54.4\% and Decision Tree at 47.8\%. However, accuracy alone is not the most reliable metric because the dataset is highly imbalanced.
+
+The positive class represents an item being selected by a respondent. Since only 7.5\% of item exposure rows are positive selections, a model could obtain high accuracy by mostly predicting that items will not be selected. For this reason, recall, F1-score, and ROC-AUC are more informative than accuracy alone. Decision Tree achieved the highest recall at 61.5\%, meaning it identified the largest share of actual selected items. Logistic Regression had the second-highest recall at 52.7\%, while Random Forest had the lowest recall at 44.0\%.
+
+The F1-scores for all three models were close to 15\%, showing that each model struggled to identify selected items without also producing many false positives. The ROC-AUC scores were also only slightly above 0.5, meaning the models performed better than random guessing but still had limited separation between selected and non-selected items. This result is likely caused by the small number of respondents, the limited number of vending machine layouts, and the difficulty of predicting individual preference from product and placement features alone.\\\\
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.72\linewidth]{Mean Accuracy.png}
+    \caption{Comparison of model accuracy and mean predicted probability for Random Forest, Logistic Regression, and Decision Tree.}
+    \label{fig:mean_accuracy_probability}
+\end{figure}
+
+\textbf{4.2 Hyperparameter Stability Analysis} \\
+
+To evaluate the stability of the three machine learning models, multiple hyperparameter configurations were tested and averaged across repeated runs. Random Forest models were evaluated using different numbers of decision trees, Logistic Regression models were evaluated with varying maximum iteration counts, and Decision Tree models were evaluated using different maximum depth values. Table \ref{tab:hyperparameter_results} reports the mean performance metrics across these hyperparameter configurations.
+
+For the hyperparameter analysis, Random Forest models were evaluated using different numbers of decision trees ($n \in \{50,100,200,300,500\}$). Logistic Regression models were evaluated using different maximum iteration limits ($\text{max\_iter} \in \{100,250,500,1000,2000\}$), while Decision Tree models were evaluated using varying maximum tree depths ($\text{max\_depth} \in \{1,2,3,5,10,15,20\}$). The resulting performance metrics were averaged across the tested configurations for each model.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{l c c c c}
+        \toprule
+        Model & Mean Accuracy & Mean Recall & Mean F1-Score & Mean ROC-AUC \\
+        \midrule
+        Random Forest & 0.587208 & 0.599240 & 0.198516 & 0.628777 \\
+        Logistic Regression & 0.519156 & 0.673004 & 0.192916 & 0.600111 \\
+        Decision Tree & 0.524675 & 0.663227 & 0.193025 & 0.608664 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Average model performance across multiple hyperparameter configurations.}
+    \label{tab:hyperparameter_results}
+\end{table}
+
+The hyperparameter experiments indicate that increasing model complexity did not substantially improve predictive performance. Random Forest consistently achieved the strongest average ROC-AUC and accuracy across the tested configurations, while Logistic Regression and Decision Tree maintained higher recall values. The relatively small differences between hyperparameter settings suggest that the primary limitation of the models may be the dataset itself rather than insufficient model complexity.
+
+The relatively small variation between hyperparameter configurations suggests that dataset characteristics and feature limitations had a stronger influence on model performance than changes in model complexity. This indicates that additional informative features or a larger dataset may be more beneficial than further hyperparameter tuning alone.
+
+\textbf{4.3 Confusion Matrix Analysis} \\
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.31\linewidth]{RF Heatmap.png}
+    \includegraphics[width=0.31\linewidth]{LR Heatmap.png}
+    \includegraphics[width=0.31\linewidth]{DT Heatmap.png}
+    \caption{Confusion matrix heatmaps for Random Forest, Logistic Regression, and Decision Tree.}
+    \label{fig:confusion_matrices}
+\end{figure}
+
+Figure \ref{fig:confusion_matrices} shows the confusion matrices for the three models. Random Forest produced the highest overall accuracy, but it was more conservative when predicting selected items. Decision Tree identified more true positive selections, which explains its higher recall, but it also produced more false positives. Logistic Regression fell between the two tree-based models.
+
+In the context of vending machine layout design, false positives and false negatives have different meanings. A false positive means the model predicts that an item will be selected even though it was not chosen by the respondent. This could lead to giving too much visibility to a product that may not perform well. A false negative means the model fails to identify an item that a respondent did select. This may be more costly when the goal is to discover promising items for better placement.
+
+\textbf{4.4 Feature Importance} \\
+
+To better understand which variables influenced model predictions, feature importance plots were generated for Random Forest, Logistic Regression, and Decision Tree. These plots help explain whether the models relied more heavily on product attributes, such as item type and size, or placement attributes, such as row, column, edge placement, and distance from the center.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.31\linewidth]{RF Importance.png}
+    \includegraphics[width=0.31\linewidth]{LR Importance.png}
+    \includegraphics[width=0.31\linewidth]{DT Importance.png}
+    \caption{Feature importance and coefficient plots for Random Forest, Logistic Regression, and Decision Tree.}
+    \label{fig:feature_importance}
+\end{figure}
+
+The Random Forest and Decision Tree models show that placement-based features were important for predicting whether an item would be selected. Features such as row, column, and distance from the center appeared as meaningful predictors, suggesting that the physical location of an item in the vending machine affects customer attention and selection behavior. Logistic Regression provides a complementary interpretation because its coefficients show whether each feature increases or decreases the predicted probability of selection under a linear model.
+
+Overall, the feature-importance results suggest that vending machine optimization should consider both what products are stocked and where those products are placed. Product type alone is not sufficient to explain selection behavior. Spatial features such as row position, column position, and centrality also contribute to predicted customer choice.
+
+\textbf{4.5 Predicted Probability Analysis} \\
+
+Predicted probability plots were generated to examine how confidently each model assigned items to the selected class. These plots are useful because the task is highly imbalanced: most item exposure rows are non-selections, and selected items are rare.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.31\linewidth]{RF Prob.png}
+    \includegraphics[width=0.31\linewidth]{LR Prob.png}
+    \includegraphics[width=0.31\linewidth]{DT Prob.png}
+    \caption{Predicted probability distributions for Random Forest, Logistic Regression, and Decision Tree.}
+    \label{fig:predicted_probabilities}
+\end{figure}
+
+Figure \ref{fig:predicted_probabilities} shows that the models generally assign low predicted probabilities to many observations. This pattern is expected because only a small percentage of item exposure rows are positive selections. The probability plots also help explain why accuracy is not enough to evaluate the models. A model can classify many non-selected items correctly while still failing to confidently separate selected items from non-selected items.
+
+These results indicate that the current features provide some useful information, but they do not fully explain individual item preference. Additional features such as price, brand familiarity, nutrition information, respondent demographics, or real transaction data could improve future predictive performance.
+\section{Conclusion}
+
+This project analyzed vending machine product choice using survey responses and supervised machine learning models. The raw survey data was transformed into an item-level binary classification dataset, where each row represented whether a respondent selected a specific item in a specific vending machine. Using the official dataset of 77 respondents, the final dataset contained 15,400 item exposure rows, including 1,155 positive selections and 14,245 non-selections. This created a highly imbalanced classification problem with a positive class rate of only 7.5\%.
+
+Random Forest, Logistic Regression, and Decision Tree models were compared using accuracy, precision, recall, F1-score, and ROC-AUC. Random Forest achieved the highest accuracy, while Decision Tree achieved the highest recall. This shows that different models have different practical strengths. Random Forest was better at overall classification, while Decision Tree was better at identifying actual selected items. However, all three models had low F1-scores and ROC-AUC values only slightly above random chance, showing that predicting individual vending machine choices is difficult with the current dataset size and feature set.
+
+The feature-importance analysis suggests that both product attributes and placement attributes influence item selection. In particular, row, column, distance from center, item size, and item type all contributed to model predictions. This supports the idea that vending machine layout decisions should not be based only on item popularity. Instead, operators should consider how product type interacts with physical placement in the machine.
+
+The main limitation of this study is the size and structure of the dataset. The survey used only 77 respondents and five vending machine layouts, which limits the amount of variation available to the models. Additionally, the data represents stated preferences rather than real purchase behavior. Future work could improve this study by collecting more responses, randomizing a larger number of vending machine layouts, adding item prices and nutrition information, and comparing survey-based predictions against real vending machine sales data.
+
+\begin{thebibliography}{9}
+
+\bibitem{tiganoaia2024}
+Bogdan Tiganoaia and Ionut-Petrisor Anghel.
+\newblock Machine Learning Algorithms for Sales Prediction in Stores: An Applied Research.
+\newblock \emph{U.P.B. Scientific Bulletin, Series C}, 86(2), 85--100, 2024.
+\newblock \url{https://www.scientificbulletin.upb.ro/static/pdfs/full6a0_331264.pdf}
+
+\bibitem{breiman2001}
+Leo Breiman.
+\newblock Random Forests.
+\newblock \emph{Machine Learning}, 45, 5--32, 2001.
+\newblock \url{https://doi.org/10.1023/A:1010933404324}
+
+\bibitem{cox1958}
+David R. Cox.
+\newblock The Regression Analysis of Binary Sequences.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}, 20(2), 215--242, 1958.
+\newblock \url{https://www.jstor.org/stable/2983890}
+
+\bibitem{quinlan1986}
+J. Ross Quinlan.
+\newblock Induction of Decision Trees.
+\newblock \emph{Machine Learning}, 1, 81--106, 1986.
+\newblock \url{https://doi.org/10.1007/BF00116251}
+
+\end{thebibliography}
+
+\end{document}
