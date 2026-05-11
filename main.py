@@ -8,6 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 def create_df():
     """
@@ -64,9 +65,9 @@ def preprocessing(df, map_1, map_2, map_3, map_4, map_5, item_type):
         item_type: The item types
 
     Returns:
-        Dataframe: A new dataframe containing the respondent, the slot they chose, the machine 
-        of the slot, the rank they gave the slot, the name of the item at the slot, and the item
-        size.
+        Dataframe: A new dataframe containing the respondent, the row and column they chose, the machine 
+        of the slot, the name of the item at the slot, the item size, the item type, whether the item was
+        at the edge, at eye level, or selected by the respondent.
     """
     new_rows = []
 
@@ -181,7 +182,7 @@ def random_forest(x_train, y_train, n = 200):
     rf = RandomForestClassifier(
         n_estimators=n,
         random_state=42,
-        class_weight="balanced"
+        class_weight="balanced" # Adjusts for class imbalance between selected and non-selected items
     )
 
     rf.fit(x_train, y_train)
@@ -203,7 +204,7 @@ def logistic_regression(x_train, y_train, iter = 1000):
     lr = LogisticRegression(
         max_iter=iter,
         random_state=42,
-        class_weight="balanced"
+        class_weight="balanced" # Adjusts for class imbalance between selected and non-selected items
         )
 
     lr.fit(x_train, y_train)
@@ -224,7 +225,7 @@ def decision_tree(x_train, y_train, depth = 5):
     dt = DecisionTreeClassifier(
         random_state=42,
         max_depth=depth,
-        class_weight="balanced"
+        class_weight="balanced" # Adjusts for class imbalance between selected and non-selected items
     )
 
     dt.fit(x_train, y_train)
@@ -267,9 +268,9 @@ def evaluation(y_test, y_pred, y_prob, display = False):
     """
 
     accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred)
-    recall = recall_score(y_test, y_pred)
-    f1 = f1_score(y_test, y_pred)
+    precision = precision_score(y_test, y_pred, zero_division=0)
+    recall = recall_score(y_test, y_pred, zero_division=0)
+    f1 = f1_score(y_test, y_pred, zero_division=0)
     cm = confusion_matrix(y_test, y_pred)
     roc = roc_auc_score(y_test, y_prob)
 
@@ -331,10 +332,13 @@ def hyperparameter_experiment(df_processed):
 
 def main(debug = False):
     """
-    Using a random forest algorithm, we should find the importance of the data based on the characteristics we give it.
-    More characteristics in the data the more better results we get. 
-    
+    Runs the full machine learning pipeline, including data loading, preprocessing,
+    train-test splitting, model training, evaluation, visualization, and
+    hyperparameter experiments.
     """
+    os.makedirs("figures", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
+
     df, map_1, map_2, map_3, map_4, map_5, item_type = create_df()
 
     if (debug):
@@ -350,7 +354,7 @@ def main(debug = False):
 
     if (debug): print(df_processed.head(5))
 
-    x, y, x_train, x_test, y_train, y_test = split(df_processed, 0.2)
+    x, y, x_train, x_test, y_train, y_test = split(df_processed, 0.8)
 
     # Random Forest
     rf = random_forest(x_train, y_train)
@@ -387,6 +391,8 @@ def main(debug = False):
         "ROC_AUC": [rf_roc, lr_roc, dt_roc]
     })
 
+    metrics.to_csv("results/model_metrics.csv", index=False)
+
     print(metrics)
 
     # Graphs
@@ -404,12 +410,14 @@ def main(debug = False):
     plt.title("Random Forest Feature Importance")
     plt.xlabel("Importance")
     plt.ylabel("Feature")
+    plt.savefig("figures/RF_Importance.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     sns.heatmap(rf_cm, annot=True, fmt="d", cmap="Blues")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.title("Random Forest Confusion Matrix Heatmap")
+    plt.savefig("figures/RF_Heatmap.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     plt.figure()
@@ -417,6 +425,7 @@ def main(debug = False):
     plt.title("Random Forest Prediction Probability Distribution")
     plt.xlabel("Predicted probability of selection")
     plt.ylabel("Count")
+    plt.savefig("figures/RF_Prob.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     # Logistic Regression
@@ -433,12 +442,14 @@ def main(debug = False):
     plt.title("Logistic Regression Coefficient Importance")
     plt.xlabel("Importance")
     plt.ylabel("Coefficient")
+    plt.savefig("figures/LR_Importance.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     sns.heatmap(lr_cm, annot=True, fmt="d", cmap="Blues")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.title("Logistic Regression Confusion Matrix Heatmap")
+    plt.savefig("figures/LR_Heatmap.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     plt.figure()
@@ -446,6 +457,7 @@ def main(debug = False):
     plt.title("Logistic Regression Prediction Probability Distribution")
     plt.xlabel("Predicted probability of selection")
     plt.ylabel("Count")
+    plt.savefig("figures/LR_Prob.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     # Decision Tree
@@ -461,12 +473,14 @@ def main(debug = False):
     plt.title("Decision Tree Feature Importance")
     plt.xlabel("Importance")
     plt.ylabel("Feature")
+    plt.savefig("figures/DT_Importance.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     sns.heatmap(dt_cm, annot=True, fmt="d", cmap="Blues")
     plt.xlabel("Predicted")
     plt.ylabel("True")
     plt.title("Decision Tree Confusion Matrix Heatmap")
+    plt.savefig("figures/DT_Heatmap.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     plt.figure()
@@ -474,6 +488,7 @@ def main(debug = False):
     plt.title("Decision Tree Prediction Probability Distribution")
     plt.xlabel("Predicted probability of selection")
     plt.ylabel("Count")
+    plt.savefig("figures/DT_Prob.png", bbox_inches="tight", dpi=300)
     plt.show()
 
     models = ["Random Forest", "Logistic Regression", "Decision Tree"]
@@ -496,6 +511,7 @@ def main(debug = False):
     plt.title("Model Accuracy and Mean Predicted Probability")
     plt.ylim(0, 1)
     plt.legend()
+    plt.savefig("figures/Accuracy_Mean_Prob.png", bbox_inches="tight", dpi=300)
     plt.show()
 
 
@@ -514,11 +530,9 @@ def main(debug = False):
         "ROC_AUC": [rf_df["roc"].mean(), lr_df["roc"].mean(), dt_df["roc"].mean()]
     })
 
+    metrics_hyper.to_csv("results/hyperparameter_metrics.csv", index=False)
+
     print(metrics_hyper)
-
-    
-
-    
 
 if __name__ == "__main__":
     main(debug=False)
